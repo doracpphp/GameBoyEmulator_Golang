@@ -30,10 +30,17 @@ var instructionSet = map[uint8]Instruction{
 	//0xA0
 	0xA0: ANDr_b, 0xA1: ANDr_c, 0xA2: ANDr_d,
 	0xA3: ANDr_e, 0xA4: ANDr_h, 0xA5: ANDr_l,
-	0xA6: ANDHL, 0xA7: ANDr_a, 0xA8: XORr_b,
+	0xA6: ANDHL,  0xA7: ANDr_a, 0xA8: XORr_b,
 	0xA9: XORr_c, 0xAA: XORr_d, 0xAB: XORr_e,
 	0xAC: XORr_h, 0xAD: XORr_l, 0xAE: XORr_hl,
 	0xAF: XORr_a,
+	//0xB0
+	0xB0: ORr_b, 0xB1: ORr_c, 0xB2: ORr_d,
+	0xB3: ORr_e, 0xB4: ORr_h, 0xB5: ORr_l,
+	0xB6: ORHL,  0xB7: ORr_a, 0xB8: CPr_b,
+	0xB9: CPr_c, 0xBA: CPr_d, 0xBB: CPr_e,
+	0xBC: CPr_h, 0xBD: CPr_l, 0xBE: CPHL,
+	0xBD: CPr_a,
 }
 
 type Emulator struct {
@@ -547,9 +554,83 @@ func XORr_a(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
+func ORr_b(emu *Emulator){
+	emu.Registers.F = 0
+	emu.Registers.A |= emu.Registers.B
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ORr_c(emu *Emulator){
+	emu.Registers.F = 0
+	emu.Registers.A |= emu.Registers.C
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ORr_d(emu *Emulator){
+	emu.Registers.F = 0
+	emu.Registers.A |= emu.Registers.D
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ORr_e(emu *Emulator){
+	emu.Registers.F = 0
+	emu.Registers.A |= emu.Registers.E
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ORr_h(emu *Emulator){
+	emu.Registers.F = 0
+	emu.Registers.A |= emu.Registers.H
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ORr_l(emu *Emulator){
+	emu.Registers.F = 0
+	emu.Registers.A |= emu.Registers.L
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ORHL(emu *Emulator){
+	emu.Registers.F = 0
+	emu.Registers.A |= emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func ORr_a(emu *Emulator){
+	emu.Registers.F = 0
+	emu.Registers.A |= emu.Registers.A
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+
 
 //0xB8
 func CPr_b(emu *Emulator) {
+	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.B) < 0 {
 		emu.Registers.F |= 0x10
 	}
@@ -565,6 +646,7 @@ func CPr_b(emu *Emulator) {
 
 //0xB9
 func CPr_c(emu *Emulator) {
+	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.C) < 0 {
 		emu.Registers.F |= 0x10
 	}
@@ -580,6 +662,7 @@ func CPr_c(emu *Emulator) {
 
 //0xBA
 func CPr_d(emu *Emulator) {
+	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.D) < 0 {
 		emu.Registers.F |= 0x10
 	}
@@ -595,6 +678,7 @@ func CPr_d(emu *Emulator) {
 
 //0xBB
 func CPr_e(emu *Emulator) {
+	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.E) < 0 {
 		emu.Registers.F |= 0x10
 	}
@@ -610,6 +694,7 @@ func CPr_e(emu *Emulator) {
 
 //0xBC
 func CPr_h(emu *Emulator) {
+	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.H) < 0 {
 		emu.Registers.F |= 0x10
 	}
@@ -622,16 +707,44 @@ func CPr_h(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-
 //0xBD
 func CPr_l(emu *Emulator) {
+	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.L) < 0 {
 		emu.Registers.F |= 0x10
 	}
 	tmp := emu.Registers.A
 	tmp -= emu.Registers.L
 	emu.Registers.F |= 0x40
-	if tmp&255 == 0 {
+	if tmp & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func CPHL(emu *Emulator) {
+	emu.Registers.F = 0
+	if int(emu.Registers.A) - emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L)) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	tmp := emu.Registers.A
+	tmp -= emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	emu.Registers.F |= 0x40
+	if tmp & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func CPr_a(emu *Emulator) {
+	emu.Registers.F = 0
+	if int(emu.Registers.A)-int(emu.Registers.A) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	tmp := emu.Registers.A
+	tmp -= emu.Registers.A
+	emu.Registers.F |= 0x40
+	if tmp & 255 == 0 {
 		emu.Registers.F |= 0x80
 	}
 	emu.Registers.M = 1
