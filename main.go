@@ -1,6 +1,7 @@
 package main
 
 import "github.com/doracpphp/GameBoyEmulator_Golang/instruction"
+
 func main() {
 	cpu := instruction.NewEmulator()
 	cpu.Registers.SetCarry(1)
