@@ -7,23 +7,33 @@ type Instruction func(*Emulator)
 
 var instructionSet = map[uint8]Instruction{
 	0x00: NOP,
-
-	0x80: ADDr_b,
-	0x81: ADDr_c,
-	0x82: ADDr_d,
-	0x83: ADDr_e,
-	0x84: ADDr_h,
-	0x85: ADDr_l,
+	//0x40
+	0x40: LDrr_bb,0x41: LDrr_bc,0x42: LDrr_bd,
+	0x43: LDrr_be,0x44: LDrr_bh,0x45: LDrr_bl,
+	0x46: LDrHL_b,0x47: LDrr_ba,0x48: LDrr_cb,
+	0x49: LDrr_cc,0x4A: LDrr_cd,0x4B: LDrr_ce,
+	0x4C: LDrr_ch,0x4D: LDrr_cl,0x4E: LDrHL_c,
+	0x4F: LDrr_ca,
+	//0x50
+	0x50: LDrr_db,0x51: LDrr_dc,0x52: LDrr_dd,
+	0x53: LDrr_de,0x54: LDrr_dh,0x55: LDrr_dl,
+	0x56: LDrHL_d,
+	//0x80
+	0x80: ADDr_b,0x81: ADDr_c,0x82: ADDr_d,
+	0x83: ADDr_e,0x84: ADDr_h,0x85: ADDr_l,
 	//0x86
-	0x87: ADDr_a,
-	0x88: ADCr_b,
-	0x89: ADCr_c,
-	0x8A: ADCr_d,
-	0x8B: ADCr_e,
-	0x8C: ADCr_h,
+	0x87: ADDr_a,0x88: ADCr_b,0x89: ADCr_c,
+	0x8A: ADCr_d,0x8B: ADCr_e,0x8C: ADCr_h,
 	0x8D: ADCr_l,
 	//0x8E
 	0x8F: ADCr_a,
+	//0xA0
+	0xA0: ANDr_b,0xA1: ANDr_c,0xA2: ANDr_d,
+	0xA3: ANDr_e,0xA4: ANDr_h,0xA5: ANDr_l,
+	0xA6: ANDHL, 0xA7: ANDr_a,0xA8: XORr_b,
+	0xA9: XORr_c,0xAA: XORr_d,0xAB: XORr_e,
+	0xAC: XORr_h,0xAD: XORr_l,0xAE: XORr_hl,
+	0xAF: XORr_a,
 }
 
 type Emulator struct {
@@ -35,9 +45,15 @@ type Emulator struct {
 func NewEmulator() *Emulator {
 	emu := new(Emulator)
 	emu.Inst = instructionSet
+	bios := [...]uint8{
+		0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
+	}
+	for i, v := range bios {
+		emu.Memory[i] = v
+	}
 	return emu
 }
-func (emu *Emulator) memoryRead(address uint16) uint8 {
+func (emu *Emulator) MemoryRead(address uint16) uint8 {
 	return emu.Memory[address]
 }
 func (emu *Emulator) memoryWrite(address uint16, value uint8) {
@@ -48,10 +64,10 @@ func (emu *Emulator) memoryWrite(address uint16, value uint8) {
 
 func (emu *Emulator) Debug() {
 	//fmt.Printf("A : %08b  D : %08b\nB : %08b  E : %08b \nC : %08b \n",emu.Registers.A,emu.Registers.D,emu.Registers.B,emu.Registers.E,emu.Registers.C)
-	fmt.Printf("A : %08b  B : %08b  C : %08b\nD : %08b  E : %08b  H : %08b  L : %08b\n",
+	fmt.Printf("------------------------------------\nA : %08b  B : %08b  C : %08b\nD : %08b  E : %08b  H : %08b  L : %08b\n",
 		emu.Registers.A, emu.Registers.B, emu.Registers.C,
 		emu.Registers.D, emu.Registers.E, emu.Registers.H, emu.Registers.L)
-	fmt.Printf("SP : %04X  PC : %04X  Flag : %08b\n", emu.Registers.SP, emu.Registers.PC, emu.Registers.F)
+	fmt.Printf("SP : %04X  PC : %04X  Flag : %08b\n------------------------------------\n", emu.Registers.SP, emu.Registers.PC, emu.Registers.F)
 
 }
 
@@ -59,6 +75,121 @@ func (emu *Emulator) Debug() {
 func NOP(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
+}
+func LDrr_bb(emu *Emulator) {
+	emu.Registers.B = emu.Registers.B
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_bc(emu *Emulator) {
+	emu.Registers.B = emu.Registers.C
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_bd(emu *Emulator) {
+	emu.Registers.B = emu.Registers.D
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_be(emu *Emulator) {
+	emu.Registers.B = emu.Registers.E
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_bh(emu *Emulator) {
+	emu.Registers.B = emu.Registers.H
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_bl(emu *Emulator) {
+	emu.Registers.B = emu.Registers.L
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrHL_b(emu *Emulator) {
+	emu.Registers.B = emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func LDrr_ba(emu *Emulator) {
+	emu.Registers.B = emu.Registers.A
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_cb(emu *Emulator) {
+	emu.Registers.C = emu.Registers.B
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_cc(emu *Emulator) {
+	emu.Registers.C = emu.Registers.C
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_cd(emu *Emulator) {
+	emu.Registers.C = emu.Registers.D
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_ce(emu *Emulator) {
+	emu.Registers.C = emu.Registers.E
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_ch(emu *Emulator) {
+	emu.Registers.C = emu.Registers.H
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_cl(emu *Emulator) {
+	emu.Registers.C = emu.Registers.L
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrHL_c(emu *Emulator) {
+	emu.Registers.C = emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func LDrr_ca(emu *Emulator) {
+	emu.Registers.C = emu.Registers.A
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_db(emu *Emulator) {
+	emu.Registers.D = emu.Registers.B
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_dc(emu *Emulator) {
+	emu.Registers.D = emu.Registers.C
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_dd(emu *Emulator) {
+	emu.Registers.D = emu.Registers.D
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_de(emu *Emulator) {
+	emu.Registers.D = emu.Registers.E
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_dh(emu *Emulator) {
+	emu.Registers.D = emu.Registers.H
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrr_dl(emu *Emulator) {
+	emu.Registers.D = emu.Registers.L
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDrHL_d(emu *Emulator) {
+	emu.Registers.D = emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	emu.Registers.M = 1
+	emu.Registers.T = 8
 }
 
 func POPBC(emu *Emulator) {
@@ -262,6 +393,161 @@ func ADCr_a(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
+
+//0xA0
+func ANDr_b(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.F |= 0x20
+	emu.Registers.A &= emu.Registers.B
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ANDr_c(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.F |= 0x20
+	emu.Registers.A &= emu.Registers.C
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ANDr_d(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.F |= 0x20
+	emu.Registers.A &= emu.Registers.D
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ANDr_e(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.F |= 0x20
+	emu.Registers.A &= emu.Registers.E
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ANDr_h(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.F |= 0x20
+	emu.Registers.A &= emu.Registers.H
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ANDr_l(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.F |= 0x20
+	emu.Registers.A &= emu.Registers.L
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func ANDHL(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.F |= 0x20
+	emu.Registers.A &= emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func ANDr_a(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.F |= 0x20
+	emu.Registers.A &= emu.Registers.A
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func XORr_b(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.A ^= emu.Registers.B
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func XORr_c(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.A ^= emu.Registers.C
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func XORr_d(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.A ^= emu.Registers.D
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func XORr_e(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.A ^= emu.Registers.E
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func XORr_h(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.A ^= emu.Registers.H
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func XORr_l(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.A ^= emu.Registers.L
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func XORr_hl(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.A ^= emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func XORr_a(emu *Emulator) {
+	emu.Registers.F = 0
+	emu.Registers.A ^= emu.Registers.A
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+
 
 //0xB8
 func CPr_b(emu *Emulator) {
