@@ -24,10 +24,9 @@ var instructionSet = map[uint8]Instruction{
 	//0x80
 	0x80: ADDr_b, 0x81: ADDr_c, 0x82: ADDr_d,
 	0x83: ADDr_e, 0x84: ADDr_h, 0x85: ADDr_l,
-	//0x86
-	0x87: ADDr_a, 0x88: ADCr_b, 0x89: ADCr_c,
-	0x8A: ADCr_d, 0x8B: ADCr_e, 0x8C: ADCr_h,
-	0x8D: ADCr_l,
+	0x86: ADDr_hl,0x87: ADDr_a, 0x88: ADCr_b,
+	0x89: ADCr_c, 0x8A: ADCr_d, 0x8B: ADCr_e, 
+	0x8C: ADCr_h, 0x8D: ADCr_l,
 	//0x8E
 	0x8F: ADCr_a,
 	//0xA0
@@ -43,7 +42,7 @@ var instructionSet = map[uint8]Instruction{
 	0xB6: ORHL, 0xB7: ORr_a, 0xB8: CPr_b,
 	0xB9: CPr_c, 0xBA: CPr_d, 0xBB: CPr_e,
 	0xBC: CPr_h, 0xBD: CPr_l, 0xBE: CPHL,
-	0xBD: CPr_a,
+	0xBF: CPr_a,
 }
 
 type Emulator struct {
@@ -340,11 +339,23 @@ func ADDr_l(emu *Emulator) {
 		emu.Registers.F |= 0x10
 	}
 	emu.Registers.A += emu.Registers.L
-	if (emu.Registers.A & 255) == 0 {
+	if emu.Registers.A & 255 == 0 {
 		emu.Registers.F |= 0x80
 	}
 	emu.Registers.M = 1
 	emu.Registers.T = 4
+}
+func ADDr_hl(emu *Emulator){
+	emu.Registers.F = 0
+	if int(emu.Registers.A)+int(emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))) > 255{
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A += emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	if emu.Registers.A & 255 == 0{
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
 }
 func ADDr_a(emu *Emulator) {
 	emu.Registers.F = 0
@@ -773,7 +784,7 @@ func CPr_l(emu *Emulator) {
 }
 func CPHL(emu *Emulator) {
 	emu.Registers.F = 0
-	if int(emu.Registers.A)-emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L)) < 0 {
+	if int(emu.Registers.A)- int(emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L))) < 0 {
 		emu.Registers.F |= 0x10
 	}
 	tmp := emu.Registers.A

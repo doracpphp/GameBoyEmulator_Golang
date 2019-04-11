@@ -8,9 +8,9 @@ func main() {
 	cpu.Registers.SP = 0xFFFE
 	cpu.Registers.B = 0xFF
 	cpu.Registers.A = 0x00
-	cpu.Registers.L = 0x01
+	cpu.Registers.L = 0x00
 	cpu.Registers.H = 0x00
 	cpu.Debug()
-	cpu.Inst[0xA8](cpu)
+	cpu.Inst[0x86](cpu)
 	cpu.Debug()
 }
