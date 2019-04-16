@@ -19,6 +19,10 @@ var instructionSet = map[uint8]Instruction{
 	0x16: LDr_dn, 0x17: RLA, 0x18:JRn,
 	0x19: ADDHLDE, 0x1A: LDAmDE,0x1B: DECDE,
 	0x1C: INCE, 0x1D: DECE,
+	//0x20
+	0x20: JRNZn, 0x21: LDHLnn, 0x22: LDIHLA,
+	0x23: INCHL, 0x24: INCH, 0x25: DECH,
+	0x26: LDr_hn,
 
 	//0x40
 	0x40: LDrr_bb, 0x41: LDrr_bc, 0x42: LDrr_bd,
@@ -238,6 +242,7 @@ func RRCA(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
+//0x10
 func STOP(emu *Emulator) {
 	emu.Registers.M = 2
 	emu.Registers.T = 4
@@ -371,6 +376,68 @@ func RRA(emu *Emulator){
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
+//0x20
+func JRNZn(emu *Emulator){
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+	if emu.Registers.F & 0x80 == 0{
+		var add uint8 = ^emu.MemoryRead(emu.Registers.PC)+1
+		emu.Registers.PC += uint16(add)
+		emu.Registers.M += 1
+		emu.Registers.T += 4
+	}
+	emu.Registers.PC += 1
+}
+func LDHLnn(emu *Emulator) {
+	emu.Registers.L = emu.MemoryRead(emu.Registers.PC)
+	emu.Registers.H = emu.MemoryRead(emu.Registers.PC + 1)
+	emu.Registers.PC += 2
+	emu.Registers.M = 3
+	emu.Registers.T = 12
+}
+func LDIHLA(emu *Emulator){
+	emu.MemoryWrite(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L), emu.Registers.A)
+	emu.Registers.L += 0x01
+	if emu.Registers.L & 255 != 0 {
+		emu.Registers.H += 0x01
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func INCHL(emu *Emulator) {
+	emu.Registers.L += 0x01
+	if emu.Registers.L&255 != 0 {
+		emu.Registers.H += 0x01
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func INCH(emu *Emulator) {
+	emu.Registers.F = 0x00
+	emu.Registers.H += 0x01
+	if emu.Registers.H & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func DECH(emu *Emulator) {
+	emu.Registers.F = 0x00
+	emu.Registers.H -= 0x1
+	emu.Registers.F |= 0x04
+	if emu.Registers.H & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDr_hn(emu *Emulator) {
+	emu.Registers.H = emu.MemoryRead(emu.Registers.PC)
+	emu.Registers.PC += 1
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+}
+
 
 func LDrr_bb(emu *Emulator) {
 	emu.Registers.B = emu.Registers.B
