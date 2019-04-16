@@ -22,7 +22,7 @@ var instructionSet = map[uint8]Instruction{
 	//0x20
 	0x20: JRNZn, 0x21: LDHLnn, 0x22: LDIHLA,
 	0x23: INCHL, 0x24: INCH, 0x25: DECH,
-	0x26: LDr_hn,
+	0x26: LDr_hn,0x27: DAA,
 
 	//0x40
 	0x40: LDrr_bb, 0x41: LDrr_bc, 0x42: LDrr_bd,
@@ -437,6 +437,22 @@ func LDr_hn(emu *Emulator) {
 	emu.Registers.M = 2
 	emu.Registers.T = 8
 }
+//To Be Confirmed
+func DAA(emu *Emulator){
+	if emu.Registers.F & 0x20 == 0x20 || emu.Registers.A & 0x0F >= 0x0A{
+		emu.Registers.A += 0x06
+	}
+	if emu.Registers.A > 0x9F {
+		emu.Registers.F |= 0x10
+		emu.Registers.A += 0x60
+	}
+	if emu.Registers.A & 0xFF == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.F &= 0xD0
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
 
 
 func LDrr_bb(emu *Emulator) {
@@ -794,6 +810,9 @@ func ADDr_b(emu *Emulator) {
 	emu.Registers.F = 0
 	if int(emu.Registers.A)+int(emu.Registers.B) > 255 {
 		emu.Registers.F |= 0x10
+	}
+	if ((emu.Registers.A&0xF) + (emu.Registers.B&0xF)) == 0x10{
+		emu.Registers.F |= 0x20
 	}
 	emu.Registers.A += emu.Registers.B
 	if (emu.Registers.A & 255) == 0 {
