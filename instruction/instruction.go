@@ -8,7 +8,6 @@ Gameboy CPU (LR35902) instruction
 */
 
 type Instruction func(*Emulator)
-
 var instructionSet = map[uint8]Instruction{
 	//0x00
 	0x00: NOP, 0x01: LDBCnn, 0x02: LDBCr_a,
@@ -30,6 +29,8 @@ var instructionSet = map[uint8]Instruction{
 	0x29:ADDHLHL, 0x2A:LDAHLI, 0x2B: DECHL,
 	0x2C: INCL, 0x2D: DECL, 0x2E: LDr_ln,
 	0x2F: CPL,
+	//0x30
+	0x30: JRNCn, 0x31: LDSPnn, 0x32: LDHLDA,
 
 	//0x40
 	0x40: LDrr_bb, 0x41: LDrr_bc, 0x42: LDrr_bd,
@@ -84,17 +85,23 @@ var instructionSet = map[uint8]Instruction{
 	0xBC: CPr_h, 0xBD: CPr_l, 0xBE: CPHL,
 	0xBF: CPr_a,
 }
+var prefixset = map[uint8]Instruction{
+}
 
 type Emulator struct {
 	Registers register.Register
 	Memory    [0xFFFF]uint8
 	Inst      map[uint8]Instruction
+	Prefix    map[uint8]Instruction
 	Halt      uint8
+	ClockSpeed uint64
 }
 
 func NewEmulator() *Emulator {
 	emu := new(Emulator)
 	emu.Inst = instructionSet
+	emu.Prefix = prefixset
+	emu.ClockSpeed = 4194304
 	bios := [...]uint8{
 		0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
 	}
@@ -544,11 +551,35 @@ func CPL(emu *Emulator){
 }
 //0x30
 func JRNCn(emu *Emulator){
-
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+	var addr uint8 = emu.MemoryRead(emu.Registers.PC)
+	emu.Registers.PC += 1
+	if emu.Registers.F & 0x10 == 0{
+		if addr >= 0x80 {
+			emu.Registers.PC -= uint16(^addr+1)
+		}else{
+			emu.Registers.PC += uint16(addr)
+		}
+		emu.Registers.M += 1
+		emu.Registers.T += 4
+	}
 }
-
-
-
+func LDSPnn(emu *Emulator){
+	emu.Registers.SP = (uint16(emu.MemoryRead(emu.Registers.PC + 1))<<8 ) | uint16(emu.MemoryRead(emu.Registers.PC))
+	emu.Registers.PC += 2
+	emu.Registers.M = 3
+	emu.Registers.T = 12
+}
+func LDHLDA(emu *Emulator){
+	emu.MemoryWrite(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L), emu.Registers.A)
+	emu.Registers.L -= 0x01
+	if emu.Registers.L & 255 == 0xFF {
+		emu.Registers.H -= 0x01
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
 
 func LDrr_bb(emu *Emulator) {
 	emu.Registers.B = emu.Registers.B
