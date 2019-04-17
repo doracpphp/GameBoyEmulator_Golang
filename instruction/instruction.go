@@ -23,6 +23,9 @@ var instructionSet = map[uint8]Instruction{
 	0x20: JRNZn, 0x21: LDHLnn, 0x22: LDIHLA,
 	0x23: INCHL, 0x24: INCH, 0x25: DECH,
 	0x26: LDr_hn,0x27: DAA, 0x28:JRZn,
+	0x29:ADDHLHL, 0x2A:LDAHLI, 0x2B: DECHL,
+	0x2C: INCL, 0x2D: DECL, 0x2E: LDr_ln,
+	0x2F: CPL,
 
 	//0x40
 	0x40: LDrr_bb, 0x41: LDrr_bc, 0x42: LDrr_bd,
@@ -476,6 +479,67 @@ func JRZn(emu *Emulator){
 		emu.Registers.T += 4
 	}
 }
+func ADDHLHL(emu *Emulator) {
+	emu.Registers.F = 0x00
+	var hl uint16 = uint16(emu.Registers.H)<<8 | uint16(emu.Registers.H)
+	if int(hl)*2 > 0xFFFF {
+		emu.Registers.F |= 0x10
+	}
+	hl += hl
+	emu.Registers.H = uint8(hl >> 8)
+	emu.Registers.L = uint8(hl & 0x00FF)
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func LDAHLI(emu *Emulator){
+	emu.Registers.A = emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L))
+	emu.Registers.L += 0x01
+	if emu.Registers.L & 255 != 0 {
+		emu.Registers.H += 0x01
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func DECHL(emu *Emulator) {
+	var hl uint16 = uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L)
+	hl -= 1
+	emu.Registers.H = uint8(hl >> 8)
+	emu.Registers.L = uint8(hl & 0x00FF)
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func INCL(emu *Emulator) {
+	emu.Registers.F = 0x00
+	emu.Registers.L += 0x01
+	if emu.Registers.L & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func DECL(emu *Emulator) {
+	emu.Registers.F = 0x00
+	emu.Registers.L -= 0x1
+	emu.Registers.F |= 0x04
+	if emu.Registers.L & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDr_ln(emu *Emulator) {
+	emu.Registers.L = emu.MemoryRead(emu.Registers.PC)
+	emu.Registers.PC += 1
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+}
+func CPL(emu *Emulator){
+	emu.Registers.A = ^emu.Registers.A
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+
+
 
 
 func LDrr_bb(emu *Emulator) {
