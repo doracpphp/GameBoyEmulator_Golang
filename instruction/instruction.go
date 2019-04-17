@@ -3,6 +3,10 @@ package instruction
 import "github.com/doracpphp/GameBoyEmulator_Golang/register"
 import "fmt"
 
+/*
+Gameboy CPU (LR35902) instruction
+*/
+
 type Instruction func(*Emulator)
 
 var instructionSet = map[uint8]Instruction{
@@ -537,6 +541,10 @@ func CPL(emu *Emulator){
 	emu.Registers.A = ^emu.Registers.A
 	emu.Registers.M = 1
 	emu.Registers.T = 4
+}
+//0x30
+func JRNCn(emu *Emulator){
+
 }
 
 
