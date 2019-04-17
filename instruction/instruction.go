@@ -22,7 +22,7 @@ var instructionSet = map[uint8]Instruction{
 	//0x20
 	0x20: JRNZn, 0x21: LDHLnn, 0x22: LDIHLA,
 	0x23: INCHL, 0x24: INCH, 0x25: DECH,
-	0x26: LDr_hn,0x27: DAA,
+	0x26: LDr_hn,0x27: DAA, 0x28:JRZn,
 
 	//0x40
 	0x40: LDrr_bb, 0x41: LDrr_bc, 0x42: LDrr_bd,
@@ -306,11 +306,16 @@ func RLA(emu *Emulator) {
 	emu.Registers.T = 4
 }
 func JRn(emu *Emulator){
-	var add uint8 = ^emu.MemoryRead(emu.Registers.PC)+1
+	var addr uint8 = emu.MemoryRead(emu.Registers.PC)
 	emu.Registers.PC+=1
-	emu.Registers.PC += uint16(add)
+	if addr >= 0x80{
+		emu.Registers.PC -= uint16(^addr+1)
+	}else{
+		emu.Registers.PC += uint16(addr)
+	}
 	emu.Registers.M = 3
 	emu.Registers.T = 12
+	
 }
 func ADDHLDE(emu *Emulator) {
 	emu.Registers.F = 0x00
@@ -380,13 +385,17 @@ func RRA(emu *Emulator){
 func JRNZn(emu *Emulator){
 	emu.Registers.M = 2
 	emu.Registers.T = 8
+	var addr uint8 = emu.MemoryRead(emu.Registers.PC)
+	emu.Registers.PC += 1
 	if emu.Registers.F & 0x80 == 0{
-		var add uint8 = ^emu.MemoryRead(emu.Registers.PC)+1
-		emu.Registers.PC += uint16(add)
+		if addr >= 0x80 {
+			emu.Registers.PC -= uint16(^addr+1)
+		}else{
+			emu.Registers.PC += uint16(addr)
+		}
 		emu.Registers.M += 1
 		emu.Registers.T += 4
 	}
-	emu.Registers.PC += 1
 }
 func LDHLnn(emu *Emulator) {
 	emu.Registers.L = emu.MemoryRead(emu.Registers.PC)
@@ -452,6 +461,20 @@ func DAA(emu *Emulator){
 	emu.Registers.F &= 0xD0
 	emu.Registers.M = 1
 	emu.Registers.T = 4
+}
+func JRZn(emu *Emulator){
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+	var addr uint8 = emu.MemoryRead(emu.Registers.PC)
+	emu.Registers.PC += 1
+	if emu.Registers.F & 0x80 == 0x80{
+		if addr >= 0x80 {
+			emu.Registers.PC -= uint16(^addr+1)
+		}else{
+			emu.Registers.PC += uint16(addr)
+		}
+		emu.Registers.T += 4
+	}
 }
 
 
