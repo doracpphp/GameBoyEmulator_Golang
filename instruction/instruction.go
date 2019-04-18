@@ -31,6 +31,10 @@ var instructionSet = map[uint8]Instruction{
 	0x2F: CPL,
 	//0x30
 	0x30: JRNCn, 0x31: LDSPnn, 0x32: LDHLDA,
+	0x33: INCSP, 0x34: INCHLm, 0x35: DECHLm,
+	0x36: LDHLmn, 0x37: SCF, 0x38: JRCn,
+	0x39: ADDHLSP,
+
 
 	//0x40
 	0x40: LDrr_bb, 0x41: LDrr_bc, 0x42: LDrr_bd,
@@ -86,6 +90,9 @@ var instructionSet = map[uint8]Instruction{
 	0xBF: CPr_a,
 }
 var prefixset = map[uint8]Instruction{
+	0x00: RLCB, 0x01: RLCC, 0x02: RLCD,
+	0x03: RLCE, 0x04: RLCH, 0x05: RLCL,
+	0x06: RLCHLm, 0x07: RLCr_A,
 }
 
 type Emulator struct {
@@ -196,7 +203,7 @@ func LDmmSP(emu *Emulator) {
 }
 func ADDHLBC(emu *Emulator) {
 	emu.Registers.F = 0x00
-	var hl uint16 = uint16(emu.Registers.H)<<8 | uint16(emu.Registers.H)
+	var hl uint16 = uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L)
 	var bc uint16 = uint16(emu.Registers.B)<<8 | uint16(emu.Registers.C)
 	if int(hl)+int(bc) > 0xFFFF {
 		emu.Registers.F |= 0x10
@@ -333,7 +340,7 @@ func JRn(emu *Emulator){
 }
 func ADDHLDE(emu *Emulator) {
 	emu.Registers.F = 0x00
-	var hl uint16 = uint16(emu.Registers.H)<<8 | uint16(emu.Registers.H)
+	var hl uint16 = uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L)
 	var de uint16 = uint16(emu.Registers.D)<<8 | uint16(emu.Registers.E)
 	if int(hl)+int(de) > 0xFFFF {
 		emu.Registers.F |= 0x10
@@ -492,7 +499,7 @@ func JRZn(emu *Emulator){
 }
 func ADDHLHL(emu *Emulator) {
 	emu.Registers.F = 0x00
-	var hl uint16 = uint16(emu.Registers.H)<<8 | uint16(emu.Registers.H)
+	var hl uint16 = uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L)
 	if int(hl)*2 > 0xFFFF {
 		emu.Registers.F |= 0x10
 	}
@@ -580,6 +587,71 @@ func LDHLDA(emu *Emulator){
 	emu.Registers.M = 1
 	emu.Registers.T = 8
 }
+func INCSP(emu *Emulator){
+	emu.Registers.SP+=1
+}
+func INCHLm(emu *Emulator){
+	emu.Registers.F = 0x00
+	val := emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	val += 1
+	if val & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.MemoryWrite(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L),val)
+	emu.Registers.M = 1
+	emu.Registers.T = 12
+}
+func DECHLm(emu *Emulator){
+	emu.Registers.F = 0x00
+	val := emu.MemoryRead(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L))
+	val -= 1
+	emu.Registers.F |= 0x40
+	if val & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.MemoryWrite(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L),val)
+	emu.Registers.M = 1
+	emu.Registers.T = 12
+}
+func LDHLmn(emu *Emulator){
+	emu.MemoryWrite(uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L),emu.MemoryRead(emu.Registers.PC))
+	emu.Registers.PC += 1
+	emu.Registers.M = 2
+	emu.Registers.T = 12
+}
+func SCF(emu *Emulator){
+	emu.Registers.F |= 0x10
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func JRCn(emu *Emulator){
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+	var addr uint8 = emu.MemoryRead(emu.Registers.PC)
+	emu.Registers.PC += 1
+	if emu.Registers.F & 0x10 == 0x10{
+		if addr >= 0x80 {
+			emu.Registers.PC -= uint16(^addr+1)
+		}else{
+			emu.Registers.PC += uint16(addr)
+		}
+		emu.Registers.T += 4
+	}
+}
+func ADDHLSP(emu *Emulator) {
+	emu.Registers.F = 0x00
+	var hl uint16 = uint16(emu.Registers.H)<<8 | uint16(emu.Registers.L)
+	sp := emu.Registers.SP
+	if int(hl)+int(sp) > 0xFFFF {
+		emu.Registers.F |= 0x10
+	}
+	hl += sp
+	emu.Registers.H = uint8(hl >> 8)
+	emu.Registers.L = uint8(hl & 0x00FF)
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+
 
 func LDrr_bb(emu *Emulator) {
 	emu.Registers.B = emu.Registers.B
@@ -1377,7 +1449,6 @@ func CPr_b(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-
 //0xB9
 func CPr_c(emu *Emulator) {
 	emu.Registers.F = 0
@@ -1393,7 +1464,6 @@ func CPr_c(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-
 //0xBA
 func CPr_d(emu *Emulator) {
 	emu.Registers.F = 0
@@ -1409,7 +1479,6 @@ func CPr_d(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-
 //0xBB
 func CPr_e(emu *Emulator) {
 	emu.Registers.F = 0
@@ -1425,7 +1494,6 @@ func CPr_e(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-
 //0xBC
 func CPr_h(emu *Emulator) {
 	emu.Registers.F = 0
@@ -1441,7 +1509,6 @@ func CPr_h(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-
 //0xBD
 func CPr_l(emu *Emulator) {
 	emu.Registers.F = 0
@@ -1484,4 +1551,106 @@ func CPr_a(emu *Emulator) {
 	}
 	emu.Registers.M = 1
 	emu.Registers.T = 4
+}
+
+
+//prefix
+//0x00
+func RLCB(emu *Emulator) {
+	emu.Registers.B = ((emu.Registers.B<<1)|(emu.Registers.B>>7))
+	emu.Registers.F = 0x00
+	if emu.Registers.B & 0x01 != 0{
+		emu.Registers.F |= 0x10
+	}
+	if emu.Registers.B == 0x00{
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+}
+func RLCC(emu *Emulator){
+	emu.Registers.C = ((emu.Registers.C<<1)|(emu.Registers.C>>7))
+	emu.Registers.F = 0x00
+	if emu.Registers.C & 0x01 != 0{
+		emu.Registers.F |= 0x10
+	}
+	if emu.Registers.C == 0x00{
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+}
+func RLCD(emu *Emulator){
+	emu.Registers.D = ((emu.Registers.D<<1)|(emu.Registers.D>>7))
+	emu.Registers.F = 0x00
+	if emu.Registers.D & 0x01 != 0{
+		emu.Registers.F |= 0x10
+	}
+	if emu.Registers.D == 0x00{
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+}
+func RLCE(emu *Emulator){
+	emu.Registers.E = ((emu.Registers.E<<1)|(emu.Registers.E>>7))
+	emu.Registers.F = 0x00
+	if emu.Registers.E & 0x01 != 0{
+		emu.Registers.F |= 0x10
+	}
+	if emu.Registers.E == 0x00{
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+}
+func RLCH(emu *Emulator){
+	emu.Registers.H = ((emu.Registers.H<<1)|(emu.Registers.H>>7))
+	emu.Registers.F = 0x00
+	if emu.Registers.H & 0x01 != 0{
+		emu.Registers.F |= 0x10
+	}
+	if emu.Registers.H == 0x00{
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+}
+func RLCL(emu *Emulator){
+	emu.Registers.L = ((emu.Registers.L<<1)|(emu.Registers.L>>7))
+	emu.Registers.F = 0x00
+	if emu.Registers.L & 0x01 != 0{
+		emu.Registers.F |= 0x10
+	}
+	if emu.Registers.L == 0x00{
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+}
+func RLCHLm(emu *Emulator){
+	var val uint8 = emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L))
+	val = ((val << 1)|val >> 7)
+	emu.Registers.F = 0x00
+	if val & 0x01 != 0{
+		emu.Registers.F |= 0x10
+	}
+	if val == 0x00{
+		emu.Registers.F |= 0x80
+	}
+	emu.MemoryWrite((uint16(emu.Registers.H)<<8|uint16(emu.Registers.L)),val)
+	emu.Registers.M = 2
+	emu.Registers.T = 16
+}
+func RLCr_A(emu *Emulator){
+	emu.Registers.A = ((emu.Registers.A<<1)|(emu.Registers.A>>7))
+	emu.Registers.F = 0x00
+	if emu.Registers.A & 0x01 != 0{
+		emu.Registers.F |= 0x10
+	}
+	if emu.Registers.A == 0x00{
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 2
+	emu.Registers.T = 8
 }
