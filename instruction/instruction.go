@@ -33,7 +33,9 @@ var instructionSet = map[uint8]Instruction{
 	0x30: JRNCn, 0x31: LDSPnn, 0x32: LDHLDA,
 	0x33: INCSP, 0x34: INCHLm, 0x35: DECHLm,
 	0x36: LDHLmn, 0x37: SCF, 0x38: JRCn,
-	0x39: ADDHLSP,
+	0x39: ADDHLSP, 0x3A: LDAHLD, 0x3B: DECSP,
+	0x3C: INCA, 0x3D: DECA, 0x3E: LDr_an,
+	0x3F: CCF,
 
 
 	//0x40
@@ -512,7 +514,7 @@ func ADDHLHL(emu *Emulator) {
 func LDAHLI(emu *Emulator){
 	emu.Registers.A = emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L))
 	emu.Registers.L += 0x01
-	if emu.Registers.L & 255 != 0 {
+	if emu.Registers.L & 255 == 0 {
 		emu.Registers.H += 0x01
 	}
 	emu.Registers.M = 1
@@ -651,6 +653,49 @@ func ADDHLSP(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 8
 }
+func LDAHLD(emu *Emulator){
+	emu.Registers.A = emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L))
+	emu.Registers.L -= 0x01
+	if emu.Registers.L & 0xFF == 0xFF {
+		emu.Registers.H -= 0x01
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func DECSP(emu *Emulator) {
+	emu.Registers.SP -= 0x01
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func INCA(emu *Emulator) {
+	emu.Registers.F = 0x00
+	emu.Registers.A += 0x01
+	if emu.Registers.A & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func DECA(emu *Emulator) {
+	emu.Registers.F = 0x00
+	emu.Registers.A -= 0x1
+	emu.Registers.F |= 0x04
+	if emu.Registers.A & 255 == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func LDr_an(emu *Emulator) {
+	emu.Registers.A = emu.MemoryRead(emu.Registers.PC)
+	emu.Registers.PC += 1
+	emu.Registers.M = 2
+	emu.Registers.T = 8
+}
+func CCF(emu *Emulator){
+
+}
+
 
 
 func LDrr_bb(emu *Emulator) {
