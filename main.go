@@ -13,12 +13,11 @@ func main() {
 		cpu.Debug()
 	}
 	*/
-	cpu.Registers.H=0xFF
-	cpu.Registers.L=0x00
-	cpu.Memory[0xFF00] = 0x86
+	cpu.Registers.A=0x5
+	cpu.Registers.B=0x4
+	cpu.Registers.F |= 0x10
 	cpu.Debug()
-	fmt.Printf("%08b\n",cpu.Memory[0xFF00])
-	cpu.Prefix[0x06](cpu)
+	cpu.Inst[0x97](cpu)
 	cpu.Debug()
 	fmt.Printf("%08b\n",cpu.Memory[0xFF00])
 

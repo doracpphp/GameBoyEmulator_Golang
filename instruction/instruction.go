@@ -36,8 +36,6 @@ var instructionSet = map[uint8]Instruction{
 	0x39: ADDHLSP, 0x3A: LDAHLD, 0x3B: DECSP,
 	0x3C: INCA, 0x3D: DECA, 0x3E: LDr_an,
 	0x3F: CCF,
-
-
 	//0x40
 	0x40: LDrr_bb, 0x41: LDrr_bc, 0x42: LDrr_bd,
 	0x43: LDrr_be, 0x44: LDrr_bh, 0x45: LDrr_bl,
@@ -45,7 +43,6 @@ var instructionSet = map[uint8]Instruction{
 	0x49: LDrr_cc, 0x4A: LDrr_cd, 0x4B: LDrr_ce,
 	0x4C: LDrr_ch, 0x4D: LDrr_cl, 0x4E: LDrHL_c,
 	0x4F: LDrr_ca,
-
 	//0x50
 	0x50: LDrr_db, 0x51: LDrr_dc, 0x52: LDrr_dd,
 	0x53: LDrr_de, 0x54: LDrr_dh, 0x55: LDrr_dl,
@@ -53,7 +50,6 @@ var instructionSet = map[uint8]Instruction{
 	0x59: LDrr_ec, 0x5A: LDrr_ed, 0x5B: LDrr_ee,
 	0x5C: LDrr_eh, 0x5D: LDrr_el, 0x5E: LDrHL_e,
 	0x5F: LDrr_ea,
-
 	//0x60
 	0x60: LDrr_hb, 0x61: LDrr_hc, 0x62: LDrr_hd,
 	0x63: LDrr_he, 0x64: LDrr_hh, 0x65: LDrr_hl,
@@ -68,7 +64,6 @@ var instructionSet = map[uint8]Instruction{
 	0x79: LDrr_ac, 0x7A: LDrr_ad, 0x7B: LDrr_ae,
 	0x7C: LDrr_ah, 0x7D: LDrr_al, 0x7E: LDrHL_a,
 	0x7F: LDrr_aa,
-
 	//0x80
 	0x80: ADDr_b, 0x81: ADDr_c, 0x82: ADDr_d,
 	0x83: ADDr_e, 0x84: ADDr_h, 0x85: ADDr_l,
@@ -76,6 +71,13 @@ var instructionSet = map[uint8]Instruction{
 	0x89: ADCr_c, 0x8A: ADCr_d, 0x8B: ADCr_e,
 	0x8C: ADCr_h, 0x8D: ADCr_l, 0x8E: ADCHL,
 	0x8F: ADCr_a,
+	//0x90
+	0x90: SUBr_b, 0x91: SUBr_c, 0x92: SUBr_d,
+	0x93: SUBr_e, 0x94: SUBr_h, 0x95: SUBr_l,
+	0x96: SUBr_hl,0x97: SUBr_a, 0x98: SBCr_b,
+	0x99: SBCr_c, 0x9A: SBCr_d, 0x9B: SUBr_e,
+	0x9C: SBCr_h, 0x9D: SBCr_l, 0x9E: SUBr_hl,
+	0x9F: SBCr_a,
 	//0xA0
 	0xA0: ANDr_b, 0xA1: ANDr_c, 0xA2: ANDr_d,
 	0xA3: ANDr_e, 0xA4: ANDr_h, 0xA5: ANDr_l,
@@ -693,11 +695,14 @@ func LDr_an(emu *Emulator) {
 	emu.Registers.T = 8
 }
 func CCF(emu *Emulator){
-
+	var carry uint8
+	if emu.Registers.F & 0x10 == 0 {
+		carry = 0x10
+	}
+	emu.Registers.F &= (0x80)
+	emu.Registers.F |= carry
 }
-
-
-
+//0x40
 func LDrr_bb(emu *Emulator) {
 	emu.Registers.B = emu.Registers.B
 	emu.Registers.M = 1
@@ -1022,7 +1027,6 @@ func LDrr_aa(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-
 func POPBC(emu *Emulator) {
 	emu.Registers.B = emu.Memory[emu.Registers.SP]
 	emu.Registers.C = emu.Memory[emu.Registers.SP+1]
@@ -1030,7 +1034,6 @@ func POPBC(emu *Emulator) {
 	emu.Registers.M = 3
 	emu.Registers.T = 12
 }
-
 func PUSHBC(emu *Emulator) {
 	emu.Registers.SP--
 	emu.Memory[emu.Registers.SP] = emu.Registers.B
@@ -1039,7 +1042,6 @@ func PUSHBC(emu *Emulator) {
 	emu.Registers.M = 3
 	emu.Registers.T = 12
 }
-
 func POPHL(emu *Emulator) {
 	emu.Registers.L = emu.Memory[emu.Registers.SP]
 	emu.Registers.H = emu.Memory[emu.Registers.SP+1]
@@ -1047,7 +1049,6 @@ func POPHL(emu *Emulator) {
 	emu.Registers.M = 3
 	emu.Registers.T = 12
 }
-
 //0x80
 func ADDr_b(emu *Emulator) {
 	emu.Registers.F = 0
@@ -1243,6 +1244,191 @@ func ADCr_a(emu *Emulator) {
 	emu.Registers.F = 0
 	var tmp uint16 = uint16(emu.Registers.A) + uint16(emu.Registers.A) + (uint16(emu.Registers.F&0x10) >> 4)
 	if tmp > 255 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A = uint8(tmp & 0xFF)
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+//0x90
+func SUBr_b(emu *Emulator){
+	emu.Registers.F = 0x40
+	if int(emu.Registers.A) - int(emu.Registers.B) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A -= emu.Registers.B
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+}
+func SUBr_c(emu *Emulator){
+	emu.Registers.F = 0x40
+	if int(emu.Registers.A) - int(emu.Registers.C) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A -= emu.Registers.C
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+}
+func SUBr_d(emu *Emulator){
+	emu.Registers.F = 0x40
+	if int(emu.Registers.A) - int(emu.Registers.D) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A -= emu.Registers.D
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+}
+func SUBr_e(emu *Emulator){
+	emu.Registers.F = 0x40
+	if int(emu.Registers.A) - int(emu.Registers.E) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A -= emu.Registers.E
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+}
+func SUBr_h(emu *Emulator){
+	emu.Registers.F = 0x40
+	if int(emu.Registers.A) - int(emu.Registers.H) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A -= emu.Registers.H
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+}
+func SUBr_l(emu *Emulator){
+	emu.Registers.F = 0x40
+	if int(emu.Registers.A) - int(emu.Registers.L) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A -= emu.Registers.L
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+}
+func SUBr_hl(emu *Emulator){
+	emu.Registers.F = 0x40
+	if int(emu.Registers.A) - int(emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L))) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A -= emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L))
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+}
+func SUBr_a(emu *Emulator){
+	emu.Registers.F = 0x40
+	if int(emu.Registers.A) - int(emu.Registers.A) < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A -= emu.Registers.A
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+}
+func SBCr_b(emu *Emulator) {
+	var tmp int = int(emu.Registers.A) - int(emu.Registers.B) - (int(emu.Registers.F&0x10) >> 4)
+	emu.Registers.F = 0x40
+	if tmp < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A = uint8(tmp & 0xFF)
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func SBCr_c(emu *Emulator) {
+	var tmp int = int(emu.Registers.A) - int(emu.Registers.C) - (int(emu.Registers.F&0x10) >> 4)
+	emu.Registers.F = 0x40
+	if tmp < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A = uint8(tmp & 0xFF)
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func SBCr_d(emu *Emulator) {
+	var tmp int = int(emu.Registers.A) - int(emu.Registers.D) - (int(emu.Registers.F&0x10) >> 4)
+	emu.Registers.F = 0x40
+	if tmp < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A = uint8(tmp & 0xFF)
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func SBCr_e(emu *Emulator) {
+	var tmp int = int(emu.Registers.A) - int(emu.Registers.E) - (int(emu.Registers.F&0x10) >> 4)
+	emu.Registers.F = 0x40
+	if tmp < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A = uint8(tmp & 0xFF)
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func SBCr_h(emu *Emulator) {
+	var tmp int = int(emu.Registers.A) - int(emu.Registers.H) - (int(emu.Registers.F&0x10) >> 4)
+	emu.Registers.F = 0x40
+	if tmp < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A = uint8(tmp & 0xFF)
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func SBCr_l(emu *Emulator) {
+	var tmp int = int(emu.Registers.A) - int(emu.Registers.L) - (int(emu.Registers.F&0x10) >> 4)
+	emu.Registers.F = 0x40
+	if tmp < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A = uint8(tmp & 0xFF)
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 4
+}
+func SBCr_hl(emu *Emulator) {
+	var tmp int = int(emu.Registers.A) - int(emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L))) - (int(emu.Registers.F&0x10) >> 4)
+	emu.Registers.F = 0x40
+	if tmp < 0 {
+		emu.Registers.F |= 0x10
+	}
+	emu.Registers.A = uint8(tmp & 0xFF)
+	if (emu.Registers.A & 255) == 0 {
+		emu.Registers.F |= 0x80
+	}
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+}
+func SBCr_a(emu *Emulator) {
+	var tmp int = int(emu.Registers.A) - int(emu.Registers.A) - (int(emu.Registers.F&0x10) >> 4)
+	emu.Registers.F = 0x40
+	if tmp < 0 {
 		emu.Registers.F |= 0x10
 	}
 	emu.Registers.A = uint8(tmp & 0xFF)
