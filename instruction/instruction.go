@@ -92,6 +92,8 @@ var instructionSet = map[uint8]Instruction{
 	0xB9: CPr_c, 0xBA: CPr_d, 0xBB: CPr_e,
 	0xBC: CPr_h, 0xBD: CPr_l, 0xBE: CPHL,
 	0xBF: CPr_a,
+	//0xC0
+
 }
 var prefixset = map[uint8]Instruction{
 	0x00: RLCB, 0x01: RLCC, 0x02: RLCD,
@@ -1027,13 +1029,7 @@ func LDrr_aa(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-func POPBC(emu *Emulator) {
-	emu.Registers.B = emu.Memory[emu.Registers.SP]
-	emu.Registers.C = emu.Memory[emu.Registers.SP+1]
-	emu.Registers.SP += 2
-	emu.Registers.M = 3
-	emu.Registers.T = 12
-}
+
 func PUSHBC(emu *Emulator) {
 	emu.Registers.SP--
 	emu.Memory[emu.Registers.SP] = emu.Registers.B
@@ -1710,7 +1706,6 @@ func CPr_d(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-//0xBB
 func CPr_e(emu *Emulator) {
 	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.E) < 0 {
@@ -1725,8 +1720,7 @@ func CPr_e(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-//0xBC
-func CPr_h(emu *Emulator) {
+func CPr_h(emu *Emulator){
 	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.H) < 0 {
 		emu.Registers.F |= 0x10
@@ -1740,8 +1734,7 @@ func CPr_h(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-//0xBD
-func CPr_l(emu *Emulator) {
+func CPr_l(emu *Emulator){
 	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.L) < 0 {
 		emu.Registers.F |= 0x10
@@ -1755,7 +1748,7 @@ func CPr_l(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-func CPHL(emu *Emulator) {
+func CPHL(emu *Emulator){
 	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.MemoryRead(uint16(emu.Registers.H)<<8|uint16(emu.Registers.L))) < 0 {
 		emu.Registers.F |= 0x10
@@ -1769,7 +1762,7 @@ func CPHL(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 8
 }
-func CPr_a(emu *Emulator) {
+func CPr_a(emu *Emulator){
 	emu.Registers.F = 0
 	if int(emu.Registers.A)-int(emu.Registers.A) < 0 {
 		emu.Registers.F |= 0x10
@@ -1783,8 +1776,32 @@ func CPr_a(emu *Emulator) {
 	emu.Registers.M = 1
 	emu.Registers.T = 4
 }
-
-
+//0xC0
+func RETNZ(emu *Emulator){
+	emu.Registers.M = 1
+	emu.Registers.T = 8
+	if emu.Registers.F & 0x80 == 0 {
+		emu.Registers.PC = emu.MemoryRead(emu.Registers.SP)
+		emu.Registers.SP += 2
+		emu.Registers.T = 20
+		emu.Registers.M += 2
+	}
+}
+func POPBC(emu *Emulator) {
+	emu.Registers.B = emu.Memory[emu.Registers.SP]
+	emu.Registers.C = emu.Memory[emu.Registers.SP+1]
+	emu.Registers.SP += 2
+	emu.Registers.M = 1
+	emu.Registers.T = 12
+}
+func JPNZnn(emu *Emulator){
+	emu.Registers.T = 12
+	if emu.Registers.F & 0x80 == 0{
+		emu.Registers.PC = (emu.MemoryRead(emu.Registers.PC+1)<<8 | emu.MemoryRead(emu.Registers.PC))
+		emu.Registers.M = 3
+		emu.Registers.T = 16
+	}
+}
 //prefix
 //0x00
 func RLCB(emu *Emulator) {
