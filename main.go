@@ -15,10 +15,11 @@ func main() {
 	*/
 	cpu.Registers.A=0x5
 	cpu.Registers.B=0x4
+	cpu.Registers.SP=0x04
+	cpu.Registers.PC=0x1
 	cpu.Registers.F |= 0x10
 	cpu.Debug()
-	cpu.Inst[0x97](cpu)
+	cpu.Inst[0xC3](cpu)
 	cpu.Debug()
 	fmt.Printf("%08b\n",cpu.Memory[0xFF00])
-
 }
