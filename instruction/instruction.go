@@ -1,6 +1,7 @@
 package instruction
 
 import "github.com/doracpphp/GameBoyEmulator_Golang/register"
+import "github.com/doracpphp/GameBoyEmulator_Golang/mmu"
 import "fmt"
 
 /*
@@ -123,6 +124,7 @@ type Emulator struct {
 	Prefix    map[uint8]Instruction
 	Halt,Ime      uint8
 	ClockSpeed uint64
+	MMU	mmu.MMU
 }
 
 func NewEmulator() *Emulator {
@@ -2076,7 +2078,10 @@ func RST18(emu *Emulator){
 	emu.Registers.M = 1
 	emu.Registers.T = 16
 }
+//0xE0
+func LDHnr_a(emu *Emulator){
 
+}
 
 //prefix
 //0x00
