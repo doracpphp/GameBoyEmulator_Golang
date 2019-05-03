@@ -2,9 +2,9 @@ package cartridge
 type ROM struct{
 	rom []uint8
 }
-func NewROM() CartridgeInterface{
+func NewROM(data []uint8) CartridgeInterface{
 	return &ROM{
-
+		rom: data,
 	}
 }
 func (rom *ROM)Read(addr uint16)uint8{

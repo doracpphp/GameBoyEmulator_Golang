@@ -13,7 +13,7 @@ func main() {
 		cpu.Debug()
 	}
 	*/
-	cpu.Registers.A=0x5
+	/*cpu.Registers.A=0x5
 	cpu.Registers.B=0x4
 	cpu.Registers.SP=0x04
 	cpu.Registers.PC=0x1
@@ -21,5 +21,11 @@ func main() {
 	cpu.Debug()
 	cpu.Inst[0xC3](cpu)
 	cpu.Debug()
+	*/
+	cart,err := cpu.MMU.Cartridge.NewCartridgeFile("test.gb")
+	if err != nil{
+		fmt.Println("error ",err)
+	}
+	fmt.Println(cart.GetName())
 	fmt.Printf("%08b\n",cpu.Memory[0xFF00])
 }
