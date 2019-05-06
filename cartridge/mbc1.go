@@ -7,9 +7,10 @@ type MBC1 struct{
 	ram []uint8
 
 }
-func NewMBC1() CartridgeInterface{
+func NewMBC1(data []uint8) CartridgeInterface{
 	return &MBC1{
-
+		rom: data,
+		romBank: 1,
 	}
 }
 func (mbc *MBC1)Read(addr uint16)uint8{

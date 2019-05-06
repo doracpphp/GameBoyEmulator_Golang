@@ -1,4 +1,4 @@
-package register
+package gameboy
 
 type Register struct {
 	//Register
