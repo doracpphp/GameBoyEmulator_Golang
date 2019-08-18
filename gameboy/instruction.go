@@ -2030,3 +2030,6 @@ func RLCr_A(emu *Emulator){
 	emu.Registers.M = 2
 	emu.Registers.T = 8
 }
+func RRCr_c(emu *Emulator){
+	
+}
